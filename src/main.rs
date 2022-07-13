@@ -13,6 +13,9 @@ fn main() {
         [0, 0, 0, 0, 4, 0, 0, 0, 9],
     ]);
 
-    println!("{}", g.solved());
+    let now = std::time::Instant::now();
+    let s = g.solved();
+    println!("{} {}", s, now.elapsed().as_nanos());
+
     println!("{}", g);
 }

@@ -55,52 +55,52 @@ impl Grid {
         new
     }
 
-    // FIXME: figure out how to refactor this and make it simpler
+    // FIXME: figure out how to refactor this to make it more compact
     pub fn solved(&self) -> bool {
-        const LEN: usize = 10;
-        let mut found = [false; LEN];
+        let mut found: u32 = 0;
         // check each row
         for i in 0..9 {
             for j in 0..9 {
-                found[self.get_xy(i, j).map_or(0, |d| d as usize)] = true;
+                found |= 1_u32 << 9 >> self.get_xy(i, j).map_or(0, |d| d as usize);
             }
 
-            if found != [true; LEN] {
+            if found != 0 {
                 return false;
             }
-            found = [false; LEN];
+            found = 0;
         }
 
         // check each column
         for j in 0..9 {
             for i in 0..9 {
-                found[self.get_xy(i, j).map_or(0, |d| d as usize)] = true;
+                found |= 1_u32 << 9 << self.get_xy(i, j).map_or(0, |d| d as usize);
             }
 
-            if found != [true; LEN] {
+            if found != 0 {
                 return false;
             }
-            found = [false; LEN];
+            found = 0;
         }
 
         // check each box
         for i in 0..9 {
             for j in 0..9 {
-                found[self
-                    .get_xy(i % 3 + j / 3, i / 3 + j % 3)
-                    .map_or(0, |d| d as usize)] = true;
+                found |= 1_u32 << 9
+                    >> self
+                        .get_xy(i % 3 + j / 3, i / 3 + j % 3)
+                        .map_or(0, |d| d as usize);
             }
 
-            if found != [true; LEN] {
+            if found != 0 {
                 return false;
             }
-            found = [false; LEN];
+            found = 0;
         }
 
         true
     }
 
-    pub fn brute_force() {}
+    pub fn brute_force(&self) {}
 }
 
 impl std::fmt::Display for Grid {
