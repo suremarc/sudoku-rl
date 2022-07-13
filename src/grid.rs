@@ -1,7 +1,7 @@
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
-#[derive(FromPrimitive, ToPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, FromPrimitive, ToPrimitive)]
 pub enum Digit {
     One = 1,
     Two = 2,
@@ -26,7 +26,7 @@ struct Update {
 
 impl Grid {
     pub fn get(&self, idx: usize) -> Option<Digit> {
-        Digit::from_u8(self.0[idx / 2] << ((idx % 2) * 4)) // if the index is even, we don't need to shift
+        Digit::from_u8((self.0[idx / 2] >> ((idx % 2) * 4)) & 0b1111) // if the index is even, we don't need to shift
     }
 
     pub fn get_xy(&self, i: usize, j: usize) -> Option<Digit> {
@@ -34,8 +34,8 @@ impl Grid {
     }
 
     pub fn set(&mut self, idx: usize, val: Option<Digit>) {
-        let mask: u8 = 0b1111 >> ((idx % 2) * 4);
-        let val_u8 = val.map_or(0, |d| d as u8) >> ((idx % 2) * 4);
+        let mask: u8 = 0b1111 << ((idx % 2) * 4);
+        let val_u8 = val.map_or(0, |d| d as u8) << ((idx % 2) * 4);
 
         self.0[idx / 2] ^= (self.0[idx / 2] ^ val_u8) & mask
     }
@@ -53,6 +53,10 @@ impl Grid {
         }
 
         new
+    }
+
+    pub fn full(&self) -> bool {
+        self.first_empty_cell().is_none()
     }
 
     // FIXME: figure out how to refactor this to make it more compact
@@ -100,7 +104,62 @@ impl Grid {
         true
     }
 
-    pub fn brute_force(&self) {}
+    pub fn brute_force(&mut self) -> bool {
+        let idx = self.first_empty_cell();
+        if idx == None {
+            return self.solved();
+        }
+
+        let idx = idx.unwrap();
+        let (i, j) = (idx % 9, idx / 9);
+
+        for candidate in (1..=9).map(|d| Digit::from_u8(d).unwrap()) {
+            assert!(self.get_xy(i, j) == None);
+            if self.safe(i, j, candidate) {
+                self.set_xy(i, j, Some(candidate));
+                if self.brute_force() {
+                    return true;
+                }
+
+                self.set_xy(i, j, None);
+            }
+        }
+
+        false
+    }
+
+    fn first_empty_cell(&self) -> Option<usize> {
+        for (idx, &val) in self.0.iter().enumerate() {
+            let a = Digit::from_u8(val & 0b1111);
+            if a == None {
+                return Some(2 * idx);
+            }
+
+            if idx == 40 {
+                break;
+            }
+            let b = Digit::from_u8(val >> 4);
+            if b == None {
+                return Some(2 * idx + 1);
+            }
+        }
+
+        None
+    }
+
+    fn safe(&self, i: usize, j: usize, candidate: Digit) -> bool {
+        let (bi, bj) = (i - i % 3, j - j % 3);
+        for x in 0..9 {
+            if self.get_xy(i, x) == Some(candidate)
+                || self.get_xy(x, j) == Some(candidate)
+                || self.get_xy(bi + x / 3, bj + x % 3) == Some(candidate)
+            {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 impl std::fmt::Display for Grid {

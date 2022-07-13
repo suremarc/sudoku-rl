@@ -1,7 +1,7 @@
 use sudoku_rl::grid::Grid;
 
 fn main() {
-    let g = Grid::new([
+    let mut g = Grid::new([
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 3, 0, 8, 5],
         [0, 0, 1, 0, 2, 0, 0, 0, 0],
@@ -17,5 +17,8 @@ fn main() {
     let s = g.solved();
     println!("{} {}", s, now.elapsed().as_nanos());
 
+    println!("{}", g);
+
+    println!("{}", g.brute_force());
     println!("{}", g);
 }
