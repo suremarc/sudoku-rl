@@ -14,10 +14,10 @@ pub enum Digit {
     Nine = 9,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 // Grid is a representation of a Sudoku grid.
 // Two digits are packed in each byte, so that the whole grid fits in a single cache line.
-pub struct Grid([u8; 41]);
+pub struct Grid(pub [u8; 41]);
 
 struct Update {
     xy: u16,
@@ -44,10 +44,10 @@ impl Grid {
         self.set(i + 9 * j, val)
     }
 
-    pub fn new(mat: [[u8; 9]; 9]) -> Self {
+    pub fn new_from_rows(mat: [[u8; 9]; 9]) -> Self {
         let mut new = Self([0; 41]);
-        for (i, row) in mat.iter().enumerate() {
-            for (j, val) in row.iter().enumerate() {
+        for (j, row) in mat.iter().enumerate() {
+            for (i, val) in row.iter().enumerate() {
                 new.set_xy(i, j, Digit::from_u8(*val))
             }
         }
@@ -63,24 +63,24 @@ impl Grid {
     pub fn solved(&self) -> bool {
         let mut found: u32 = 0;
         // check each row
-        for i in 0..9 {
-            for j in 0..9 {
+        for j in 0..9 {
+            for i in 0..9 {
                 found |= 1_u32 << 9 >> self.get_xy(i, j).map_or(0, |d| d as usize);
             }
 
-            if found != 0 {
+            if found != 0b111111111 {
                 return false;
             }
             found = 0;
         }
 
         // check each column
-        for j in 0..9 {
-            for i in 0..9 {
-                found |= 1_u32 << 9 << self.get_xy(i, j).map_or(0, |d| d as usize);
+        for i in 0..9 {
+            for j in 0..9 {
+                found |= 1_u32 << 9 >> self.get_xy(i, j).map_or(0, |d| d as usize);
             }
 
-            if found != 0 {
+            if found != 0b111111111 {
                 return false;
             }
             found = 0;
@@ -91,11 +91,11 @@ impl Grid {
             for j in 0..9 {
                 found |= 1_u32 << 9
                     >> self
-                        .get_xy(i % 3 + j / 3, i / 3 + j % 3)
+                        .get_xy(3 * (i % 3) + j / 3, 3 * (i / 3) + j % 3)
                         .map_or(0, |d| d as usize);
             }
 
-            if found != 0 {
+            if found != 0b111111111 {
                 return false;
             }
             found = 0;
@@ -166,13 +166,13 @@ impl std::fmt::Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, " - - - - - - - - - - - - -")?;
 
-        for i in 0..9 {
-            if i % 3 == 0 && i > 0 {
+        for j in 0..9 {
+            if j % 3 == 0 && j > 0 {
                 writeln!(f, " | - - - + - - - + - - - |")?
             }
 
-            for j in 0..9 {
-                if j % 3 == 0 {
+            for i in 0..9 {
+                if i % 3 == 0 {
                     write!(f, " |")?
                 }
 
