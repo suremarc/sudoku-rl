@@ -3,6 +3,7 @@ use std::mem::size_of;
 use sudoku_rl::grid::Grid;
 
 fn main() {
+    // 69175316 iterations
     let mut g: Grid = Grid::new_from_rows([
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 3, 0, 8, 5],
@@ -18,8 +19,8 @@ fn main() {
     println!("{}", size_of::<Grid>());
 
     let now = std::time::Instant::now();
-    let (s, num_iterations) = g.brute_force();
-    println!("{} {} {}", s, num_iterations, now.elapsed().as_millis());
+    let s = g.brute_force();
+    println!("{} {}", s, now.elapsed().as_millis());
 
     println!("{}", g);
 }

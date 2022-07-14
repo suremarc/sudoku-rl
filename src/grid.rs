@@ -53,6 +53,29 @@ impl Grid {
         !self.0.iter().any(Option::is_none)
     }
 
+    pub fn brute_force(&mut self) -> bool {
+        let idx = self.0.iter().position(Option::is_none);
+        if idx == None {
+            return self.solved();
+        }
+
+        let idx = idx.unwrap();
+        let (i, j) = (idx % 9, idx / 9);
+
+        for candidate in (1..=9).map(|d| Digit::from_u8(d).unwrap()) {
+            if self.safe(i, j, candidate) {
+                self[(i, j)] = Some(candidate);
+                if self.brute_force() {
+                    return true;
+                }
+
+                self[(i, j)] = None;
+            }
+        }
+
+        false
+    }
+
     // FIXME: figure out how to refactor this to make it more compact
     pub fn solved(&self) -> bool {
         let rows = (0..9_usize).map(|x| {
@@ -110,37 +133,6 @@ impl Grid {
         }
 
         true
-    }
-
-    pub fn brute_force(&mut self) -> (bool, u64) {
-        let mut num: u64 = 0;
-        let solved = self.brute_force_with_count(&mut num);
-
-        (solved, num)
-    }
-
-    fn brute_force_with_count(&mut self, num: &mut u64) -> bool {
-        let idx = self.0.iter().position(Option::is_none);
-        if idx == None {
-            return self.solved();
-        }
-
-        let idx = idx.unwrap();
-        let (i, j) = (idx % 9, idx / 9);
-
-        for candidate in (1..=9).map(|d| Digit::from_u8(d).unwrap()) {
-            if self.safe(i, j, candidate) {
-                self[(i, j)] = Some(candidate);
-                *num += 1;
-                if self.brute_force_with_count(num) {
-                    return true;
-                }
-
-                self[(i, j)] = None;
-            }
-        }
-
-        false
     }
 }
 
