@@ -163,14 +163,12 @@ impl Default for Grid {
 impl std::ops::Index<usize> for Grid {
     type Output = Option<Digit>;
 
-    #[inline(always)]
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
     }
 }
 
 impl std::ops::IndexMut<usize> for Grid {
-    #[inline(always)]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
     }
@@ -179,14 +177,12 @@ impl std::ops::IndexMut<usize> for Grid {
 impl std::ops::Index<(usize, usize)> for Grid {
     type Output = Option<Digit>;
 
-    #[inline(always)]
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         &self.0[index.0 + index.1 * 9]
     }
 }
 
 impl std::ops::IndexMut<(usize, usize)> for Grid {
-    #[inline(always)]
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         &mut self.0[index.0 + index.1 * 9]
     }
