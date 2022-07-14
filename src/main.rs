@@ -17,6 +17,7 @@ fn main() {
     ]);
 
     println!("{}", size_of::<Grid>());
+    println!("{}", g);
 
     let now = std::time::Instant::now();
     let s = g.brute_force();

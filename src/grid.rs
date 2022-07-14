@@ -19,8 +19,10 @@ pub struct Grid([Option<Digit>; 81]);
 impl Grid {
     pub fn new_from_rows(mat: [[u8; 9]; 9]) -> Self {
         let mut new: Self = Default::default();
-        for (i, &v) in mat.flatten().iter().enumerate() {
-            new[i] = Digit::from_u8(v);
+        for (row, data) in mat.iter().enumerate() {
+            for (col, &val) in data.iter().enumerate() {
+                new[(row, col)] = Digit::from_u8(val);
+            }
         }
 
         new
@@ -46,7 +48,7 @@ impl Grid {
         }
 
         let idx = idx.unwrap();
-        let (i, j) = (idx % 9, idx / 9);
+        let (i, j) = (idx / 9, idx % 9);
 
         for candidate in (1..=9).map(|d| Digit::from_u8(d).unwrap()) {
             if self.safe(i, j, candidate) {
@@ -66,19 +68,6 @@ impl Grid {
     pub fn solved(&self) -> bool {
         let rows = (0..9_usize).map(|x| {
             [
-                (0, x),
-                (1, x),
-                (2, x),
-                (3, x),
-                (4, x),
-                (5, x),
-                (6, x),
-                (7, x),
-                (8, x),
-            ]
-        });
-        let columns = (0..9_usize).map(|x| {
-            [
                 (x, 0),
                 (x, 1),
                 (x, 2),
@@ -90,8 +79,21 @@ impl Grid {
                 (x, 8),
             ]
         });
+        let columns = (0..9_usize).map(|x| {
+            [
+                (0, x),
+                (1, x),
+                (2, x),
+                (3, x),
+                (4, x),
+                (5, x),
+                (6, x),
+                (7, x),
+                (8, x),
+            ]
+        });
         let boxes = (0..9_usize).map(|x| {
-            let (i, j) = (3 * (x % 3), 3 * (x / 3));
+            let (i, j) = (3 * (x / 3), 3 * (x % 3));
             [
                 (i, j),
                 (i + 1, j),
@@ -160,13 +162,13 @@ impl std::ops::Index<(usize, usize)> for Grid {
     type Output = Option<Digit>;
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
-        &self.0[index.0 + index.1 * 9]
+        &self.0[9 * index.0 + index.1]
     }
 }
 
 impl std::ops::IndexMut<(usize, usize)> for Grid {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
-        &mut self.0[index.0 + index.1 * 9]
+        &mut self.0[9 * index.0 + index.1]
     }
 }
 
@@ -174,20 +176,20 @@ impl std::fmt::Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, " - - - - - - - - - - - - -")?;
 
-        for j in 0..9 {
-            if j % 3 == 0 && j > 0 {
+        for r in 0..9 {
+            if r % 3 == 0 && r > 0 {
                 writeln!(f, " | - - - + - - - + - - - |")?
             }
 
-            for i in 0..9 {
-                if i % 3 == 0 {
+            for c in 0..9 {
+                if c % 3 == 0 {
                     write!(f, " |")?
                 }
 
                 write!(
                     f,
                     " {}",
-                    self[(i, j)].map_or('.', |d| (d as u8 + b'0') as char)
+                    self[(r, c)].map_or('.', |d| (d as u8 + b'0') as char)
                 )?
             }
 
