@@ -17,12 +17,7 @@ pub enum Digit {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 // Grid is a representation of a Sudoku grid.
 // Two digits are packed in each byte, so that the whole grid fits in a single cache line.
-pub struct Grid(pub [u8; 41]);
-
-struct Update {
-    xy: u16,
-    write: Option<Digit>,
-}
+pub struct Grid([u8; 41]);
 
 impl Grid {
     pub fn get(&self, idx: usize) -> Option<Digit> {
@@ -104,7 +99,7 @@ impl Grid {
         true
     }
 
-    pub fn brute_force(&mut self) -> bool {
+    pub fn brute_force_with_count(&mut self, num: &mut u64) -> bool {
         let idx = self.first_empty_cell();
         if idx == None {
             return self.solved();
@@ -114,10 +109,10 @@ impl Grid {
         let (i, j) = (idx % 9, idx / 9);
 
         for candidate in (1..=9).map(|d| Digit::from_u8(d).unwrap()) {
-            assert!(self.get_xy(i, j) == None);
             if self.safe(i, j, candidate) {
                 self.set_xy(i, j, Some(candidate));
-                if self.brute_force() {
+                *num += 1;
+                if self.brute_force_with_count(num) {
                     return true;
                 }
 
@@ -126,6 +121,13 @@ impl Grid {
         }
 
         false
+    }
+
+    pub fn brute_force(&mut self) -> (bool, u64) {
+        let mut num: u64 = 0;
+        let solved = self.brute_force_with_count(&mut num);
+
+        (solved, num)
     }
 
     fn first_empty_cell(&self) -> Option<usize> {
