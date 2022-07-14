@@ -35,20 +35,6 @@ impl Grid {
         new
     }
 
-    pub fn safe(&self, i: usize, j: usize, candidate: Digit) -> bool {
-        let (bi, bj) = (i - i % 3, j - j % 3);
-        for x in 0..9 {
-            if self[(i, x)] == Some(candidate)
-                || self[(x, j)] == Some(candidate)
-                || self[(bi + x / 3, bj + x % 3)] == Some(candidate)
-            {
-                return false;
-            }
-        }
-
-        true
-    }
-
     pub fn full(&self) -> bool {
         !self.0.iter().any(Option::is_none)
     }
@@ -128,6 +114,20 @@ impl Grid {
             }
 
             if found != ALL_FOUND {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn safe(&self, i: usize, j: usize, candidate: Digit) -> bool {
+        let (bi, bj) = (i - i % 3, j - j % 3);
+        for x in 0..9 {
+            if self[(i, x)] == Some(candidate)
+                || self[(x, j)] == Some(candidate)
+                || self[(bi + x / 3, bj + x % 3)] == Some(candidate)
+            {
                 return false;
             }
         }
