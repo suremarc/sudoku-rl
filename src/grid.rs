@@ -13,7 +13,7 @@ pub enum Digit {
     Eight = 8,
     Nine = 9,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Grid([Option<Digit>; 81]);
 
 impl Grid {
@@ -50,7 +50,7 @@ impl Grid {
     }
 
     pub fn full(&self) -> bool {
-        self.first_empty_cell().is_none()
+        !self.0.iter().any(Option::is_none)
     }
 
     // FIXME: figure out how to refactor this to make it more compact
@@ -120,7 +120,7 @@ impl Grid {
     }
 
     fn brute_force_with_count(&mut self, num: &mut u64) -> bool {
-        let idx = self.first_empty_cell();
+        let idx = self.0.iter().position(Option::is_none);
         if idx == None {
             return self.solved();
         }
@@ -141,16 +141,6 @@ impl Grid {
         }
 
         false
-    }
-
-    fn first_empty_cell(&self) -> Option<usize> {
-        for idx in 0..81 {
-            if self[idx].is_none() {
-                return Some(idx);
-            };
-        }
-
-        None
     }
 }
 
