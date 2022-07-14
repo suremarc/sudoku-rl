@@ -181,6 +181,7 @@ macro_rules! impl_grid_display {
     };
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NaiveGrid([Option<Digit>; 81]);
 
 impl Grid for NaiveGrid {
@@ -201,7 +202,7 @@ impl Grid for NaiveGrid {
 
 impl_grid_display!(NaiveGrid);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // PackedGrid is a representation of a Sudoku grid.
 // Two digits are packed in each byte, so that the whole grid fits in a single cache line.
 pub struct PackedGrid([u8; 41]);
