@@ -1,9 +1,9 @@
 use std::mem::size_of;
 
-use sudoku_rl::grid::{Grid, NaiveGrid, PackedGrid};
+use sudoku_rl::grid::Grid;
 
 fn main() {
-    let mut g: NaiveGrid = Grid::new_from_rows([
+    let mut g: Grid = Grid::new_from_rows([
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 3, 0, 8, 5],
         [0, 0, 1, 0, 2, 0, 0, 0, 0],
@@ -15,11 +15,7 @@ fn main() {
         [0, 0, 0, 0, 4, 0, 0, 0, 9],
     ]);
 
-    println!(
-        "{} vs {} packed",
-        size_of::<NaiveGrid>(),
-        size_of::<PackedGrid>()
-    );
+    println!("{}", size_of::<Grid>());
 
     let now = std::time::Instant::now();
     let (s, num_iterations) = g.brute_force();

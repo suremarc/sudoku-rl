@@ -13,53 +13,34 @@ pub enum Digit {
     Eight = 8,
     Nine = 9,
 }
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Grid([Option<Digit>; 81]);
 
-pub trait Grid
-where
-    Self: Sized,
-{
-    fn new_zeroed() -> Self;
-
-    fn get(&self, idx: usize) -> Option<Digit>;
-    fn set(&mut self, idx: usize, val: Option<Digit>);
-
-    #[inline]
-    fn get_xy(&self, i: usize, j: usize) -> Option<Digit> {
-        self.get(i + 9 * j)
-    }
-
-    #[inline]
-    fn set_xy(&mut self, i: usize, j: usize, val: Option<Digit>) {
-        self.set(i + 9 * j, val)
-    }
-
-    fn new_from_rows(mat: [[u8; 9]; 9]) -> Self {
-        let mut new = Self::new_zeroed();
-        for (j, row) in mat.iter().enumerate() {
-            for (i, val) in row.iter().enumerate() {
-                new.set_xy(i, j, Digit::from_u8(*val))
-            }
+impl Grid {
+    pub fn new_from_rows(mat: [[u8; 9]; 9]) -> Self {
+        let mut new: Self = Default::default();
+        for (i, &v) in mat.flatten().iter().enumerate() {
+            new[i] = Digit::from_u8(v);
         }
 
         new
     }
 
-    fn first_empty_cell(&self) -> Option<usize> {
-        for idx in 0..81 {
-            if self.get(idx).is_none() {
-                return Some(idx);
-            };
+    pub fn new_from_array(arr: [u8; 81]) -> Self {
+        let mut new: Self = Default::default();
+        for (i, &v) in arr.iter().enumerate() {
+            new[i] = Digit::from_u8(v);
         }
 
-        None
+        new
     }
 
-    fn safe(&self, i: usize, j: usize, candidate: Digit) -> bool {
+    pub fn safe(&self, i: usize, j: usize, candidate: Digit) -> bool {
         let (bi, bj) = (i - i % 3, j - j % 3);
         for x in 0..9 {
-            if self.get_xy(i, x) == Some(candidate)
-                || self.get_xy(x, j) == Some(candidate)
-                || self.get_xy(bi + x / 3, bj + x % 3) == Some(candidate)
+            if self[(i, x)] == Some(candidate)
+                || self[(x, j)] == Some(candidate)
+                || self[(bi + x / 3, bj + x % 3)] == Some(candidate)
             {
                 return false;
             }
@@ -68,53 +49,74 @@ where
         true
     }
 
-    fn full(&self) -> bool {
+    pub fn full(&self) -> bool {
         self.first_empty_cell().is_none()
     }
 
     // FIXME: figure out how to refactor this to make it more compact
-    fn solved(&self) -> bool {
-        let mut found: [bool; 10] = [false; 10];
-        let found_all = [false, true, true, true, true, true, true, true, true, true];
-        // check each row
-        for j in 0..9 {
-            for i in 0..9 {
-                found[self.get_xy(i, j).map_or(0, |d| d as usize)] = true;
+    pub fn solved(&self) -> bool {
+        let rows = (0..9_usize).map(|x| {
+            [
+                (0, x),
+                (1, x),
+                (2, x),
+                (3, x),
+                (4, x),
+                (5, x),
+                (6, x),
+                (7, x),
+                (8, x),
+            ]
+        });
+        let columns = (0..9_usize).map(|x| {
+            [
+                (x, 0),
+                (x, 1),
+                (x, 2),
+                (x, 3),
+                (x, 4),
+                (x, 5),
+                (x, 6),
+                (x, 7),
+                (x, 8),
+            ]
+        });
+        let boxes = (0..9_usize).map(|x| {
+            let (i, j) = (3 * (x % 3), 3 * (x / 3));
+            [
+                (i, j),
+                (i + 1, j),
+                (i + 2, j),
+                (i, j + 1),
+                (i + 1, j + 1),
+                (i + 2, j + 1),
+                (i, j + 2),
+                (i + 1, j + 2),
+                (i + 2, j + 2),
+            ]
+        });
+
+        for set in rows.chain(columns).chain(boxes) {
+            let mut found = [false; 10];
+            const ALL_FOUND: [bool; 10] =
+                [false, true, true, true, true, true, true, true, true, true];
+            for v in set {
+                found[self[v].map_or(0, |d| d as usize)] = true;
             }
 
-            if found != found_all {
+            if found != ALL_FOUND {
                 return false;
             }
-            found = [false; 10];
-        }
-
-        // check each column
-        for i in 0..9 {
-            for j in 0..9 {
-                found[self.get_xy(i, j).map_or(0, |d| d as usize)] = true;
-            }
-
-            if found != found_all {
-                return false;
-            }
-            found = [false; 10];
-        }
-
-        // check each box
-        for i in 0..9 {
-            for j in 0..9 {
-                found[self
-                    .get_xy(3 * (i % 3) + j / 3, 3 * (i / 3) + j % 3)
-                    .map_or(0, |d| d as usize)] = true;
-            }
-
-            if found != found_all {
-                return false;
-            }
-            found = [false; 10];
         }
 
         true
+    }
+
+    pub fn brute_force(&mut self) -> (bool, u64) {
+        let mut num: u64 = 0;
+        let solved = self.brute_force_with_count(&mut num);
+
+        (solved, num)
     }
 
     fn brute_force_with_count(&mut self, num: &mut u64) -> bool {
@@ -128,102 +130,92 @@ where
 
         for candidate in (1..=9).map(|d| Digit::from_u8(d).unwrap()) {
             if self.safe(i, j, candidate) {
-                self.set_xy(i, j, Some(candidate));
+                self[(i, j)] = Some(candidate);
                 *num += 1;
                 if self.brute_force_with_count(num) {
                     return true;
                 }
 
-                self.set_xy(i, j, None);
+                self[(i, j)] = None;
             }
         }
 
         false
     }
 
-    fn brute_force(&mut self) -> (bool, u64) {
-        let mut num: u64 = 0;
-        let solved = self.brute_force_with_count(&mut num);
+    fn first_empty_cell(&self) -> Option<usize> {
+        for idx in 0..81 {
+            if self[idx].is_none() {
+                return Some(idx);
+            };
+        }
 
-        (solved, num)
+        None
     }
 }
 
-macro_rules! impl_grid_display {
-    ($name:ty) => {
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                writeln!(f, " - - - - - - - - - - - - -")?;
-
-                for j in 0..9 {
-                    if j % 3 == 0 && j > 0 {
-                        writeln!(f, " | - - - + - - - + - - - |")?
-                    }
-
-                    for i in 0..9 {
-                        if i % 3 == 0 {
-                            write!(f, " |")?
-                        }
-
-                        write!(
-                            f,
-                            " {}",
-                            self.get_xy(i, j).map_or('.', |d| (d as u8 + b'0') as char)
-                        )?
-                    }
-
-                    writeln!(f, " |")?
-                }
-
-                writeln!(f, " - - - - - - - - - - - - -")
-            }
-        }
-    };
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NaiveGrid([Option<Digit>; 81]);
-
-impl Grid for NaiveGrid {
-    fn new_zeroed() -> NaiveGrid {
+impl Default for Grid {
+    fn default() -> Self {
         Self([None; 81])
     }
+}
 
-    #[inline]
-    fn get(&self, idx: usize) -> Option<Digit> {
-        self.0[idx]
-    }
+impl std::ops::Index<usize> for Grid {
+    type Output = Option<Digit>;
 
-    #[inline]
-    fn set(&mut self, idx: usize, val: Option<Digit>) {
-        self.0[idx] = val
+    #[inline(always)]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
     }
 }
 
-impl_grid_display!(NaiveGrid);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// PackedGrid is a representation of a Sudoku grid.
-// Two digits are packed in each byte, so that the whole grid fits in a single cache line.
-pub struct PackedGrid([u8; 41]);
-
-impl Grid for PackedGrid {
-    fn new_zeroed() -> PackedGrid {
-        Self([0; 41])
-    }
-
-    #[inline]
-    fn get(&self, idx: usize) -> Option<Digit> {
-        Digit::from_u8((self.0[idx / 2] >> ((idx % 2) * 4)) & 0b1111) // if the index is even, we don't need to shift
-    }
-
-    #[inline]
-    fn set(&mut self, idx: usize, val: Option<Digit>) {
-        let mask: u8 = 0b1111 << ((idx % 2) * 4);
-        let val_u8 = val.map_or(0, |d| d as u8) << ((idx % 2) * 4);
-
-        self.0[idx / 2] ^= (self.0[idx / 2] ^ val_u8) & mask
+impl std::ops::IndexMut<usize> for Grid {
+    #[inline(always)]
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
     }
 }
 
-impl_grid_display!(PackedGrid);
+impl std::ops::Index<(usize, usize)> for Grid {
+    type Output = Option<Digit>;
+
+    #[inline(always)]
+    fn index(&self, index: (usize, usize)) -> &Self::Output {
+        &self.0[index.0 + index.1 * 9]
+    }
+}
+
+impl std::ops::IndexMut<(usize, usize)> for Grid {
+    #[inline(always)]
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        &mut self.0[index.0 + index.1 * 9]
+    }
+}
+
+impl std::fmt::Display for Grid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, " - - - - - - - - - - - - -")?;
+
+        for j in 0..9 {
+            if j % 3 == 0 && j > 0 {
+                writeln!(f, " | - - - + - - - + - - - |")?
+            }
+
+            for i in 0..9 {
+                if i % 3 == 0 {
+                    write!(f, " |")?
+                }
+
+                write!(
+                    f,
+                    " {}",
+                    self[(i, j)].map_or('.', |d| (d as u8 + b'0') as char)
+                )?
+            }
+
+            writeln!(f, " |")?
+        }
+
+        writeln!(f, " - - - - - - - - - - - - -")
+    }
+}
